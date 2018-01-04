@@ -1,0 +1,69 @@
+#!/usr/bin/perl
+
+use FindBin;
+use Data::Dumper;
+use Digest::MD5 qw/md5_hex/;
+my $base_dir = $FindBin::Bin;
+
+use warnings;
+use strict;
+
+my $cache_dir = "$base_dir/cache";
+
+my $todo = {};
+open( my $fh, "<", "$base_dir/starting-pages.txt" );
+while( my $line = readline( $fh ) ) {
+	chomp $line;
+	$todo->{$line} = 1;
+}
+close($fh);
+
+
+my $done = {};
+my $t = time;
+while( scalar keys %$todo ) {
+	my $url_to_process = (sort keys %$todo)[0];
+	my $contents = get_url( $url_to_process );
+	next if( $contents eq "" );
+	$done->{$url_to_process}=1;
+	delete $todo->{$url_to_process};
+	print STDERR "Last took: ".(time-$t)."\n";
+	$t = time();
+	print STDERR "Remaining: ".( scalar keys %$todo )." \n";
+
+        # decide page type
+	if( $url_to_process =~ m/\/area\// ) {
+		# processing list of resturants
+		
+		# find a list of URLs in quotes
+		my @urls = ();
+		$contents =~ s!"(/[^/]+/menu)"!push @urls, $1!ge;
+		foreach my $url ( @urls ) {
+			$todo->{"https://www.just-eat.co.uk".$url} = 1;
+		}
+	}
+}
+exit;
+
+sub get_url {
+	my( $url ) = @_;
+	print STDERR "URL: $url\n";
+
+	if( !-d $cache_dir ) {
+		mkdir( $cache_dir );
+	}
+	my $file = $cache_dir."/".md5_hex( $url );
+	if( !-e $file ) {
+		my $cmd = "$base_dir/phantomjs-2.1.1-macosx/bin/phantomjs save_page.js '$url' > $file";
+#print $cmd."\n";
+		`$cmd`;
+	}
+
+	open( my $fh, "<", $file ) || die "dang: $! ($file)";
+	my $r = join( "", <$fh> );
+	close $fh;
+
+	if( length($r) < 10 ) { print STDERR "\nGah: $url\nZAPPED!\n\n"; unlink($file); return ""; }
+
+	return $r;
+}
