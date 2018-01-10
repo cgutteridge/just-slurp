@@ -4,6 +4,7 @@ use FindBin;
 use Data::Dumper;
 use Digest::MD5 qw/md5_hex/;
 my $base_dir = $FindBin::Bin;
+my $PHANTOM_JS = "$base_dir/phantomjs-2.1.1-macosx/bin/phantomjs";
 
 use warnings;
 use strict;
@@ -42,6 +43,44 @@ while( scalar keys %$todo ) {
 			$todo->{"https://www.just-eat.co.uk".$url} = 1;
 		}
 	}
+
+	if( $url_to_process =~ m/\/menu$/ ) {
+		$contents =~ m/<h1[^>]*>([^<]+)/;
+		my $resturantTitle = $1;
+
+		my @sections = split( /<h3[^>]*>/, $contents );
+		
+		shift @sections;
+		foreach my $section ( @sections ) {
+			$section =~ m/^([^<]+)/;
+			my $sectionTitle = $1;
+		
+			my @items = split( /<h4[^>]*>/, $section );
+			shift @items;
+		
+			foreach my $item ( @items ) {
+				$item =~ m/^([^<]+)/;
+				my $itemTitle = $1;
+		
+				if( $item =~ m/<h5/ ) {
+					my @opts = split( /<h5[^>]*>/, $item );
+					shift @opts;
+					
+					foreach my $opt ( @opts ) {
+						$opt =~ m/^([^<]+)/;
+						my $optTitle = $1;
+					
+						print "$resturantTitle => $sectionTitle => $itemTitle => $optTitle\n";
+					}
+				} else {
+					print "$resturantTitle => $sectionTitle => $itemTitle\n";
+				}
+		
+				
+			}
+		}
+	}
+
 }
 exit;
 
@@ -54,7 +93,7 @@ sub get_url {
 	}
 	my $file = $cache_dir."/".md5_hex( $url );
 	if( !-e $file ) {
-		my $cmd = "$base_dir/phantomjs-2.1.1-macosx/bin/phantomjs save_page.js '$url' > $file";
+		my $cmd = "$PHANTOM_JS '$url' > $file";
 #print $cmd."\n";
 		`$cmd`;
 	}
