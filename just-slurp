@@ -1,5 +1,8 @@
 #!/usr/bin/perl
 
+# CC0 - Public Domain 
+# 2018
+
 use FindBin;
 use Data::Dumper;
 use Digest::MD5 qw/md5_hex/;
