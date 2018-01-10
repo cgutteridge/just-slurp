@@ -4,5 +4,9 @@ Copy starting-pages.txt.example to starting-pages.txt and alter the URL to the p
 
 I've included the MACOS version of phantomjs. If on linux you may need to get a different version and alter the path the the binary in the just-slurp script.
 
+To run the script, give it an "area" URL from just-eat. Suggested use:
+
+  ./just-slurp https://www.just-eat.co.uk/area/so17-portswood > noms.txt
+
 This script is placed in the public domain. Use at your own risk. 
 

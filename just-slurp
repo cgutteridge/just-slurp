@@ -6,21 +6,18 @@
 use FindBin;
 use Data::Dumper;
 use Digest::MD5 qw/md5_hex/;
-my $base_dir = $FindBin::Bin;
-my $PHANTOM_JS = "$base_dir/phantomjs-2.1.1-macosx/bin/phantomjs";
+my $BASE_DIR = $FindBin::Bin;
+my $CACHE_DIR = "$BASE_DIR/cache";
+
+my $PHANTOMJS_BIN = "$BASE_DIR/phantomjs-2.1.1-macosx/bin/phantomjs";
 
 use warnings;
 use strict;
 
-my $cache_dir = "$base_dir/cache";
-
 my $todo = {};
-open( my $fh, "<", "$base_dir/starting-pages.txt" );
-while( my $line = readline( $fh ) ) {
-	chomp $line;
-	$todo->{$line} = 1;
+foreach my $arg ( @ARGV ) {
+	$todo->{$arg} = 1;
 }
-close($fh);
 
 
 my $done = {};
@@ -48,6 +45,7 @@ while( scalar keys %$todo ) {
 	}
 
 	if( $url_to_process =~ m/\/menu$/ ) {
+		$contents =~ s/&amp;/&/g; # hacky, but so's this whole script
 		$contents =~ m/<h1[^>]*>([^<]+)/;
 		my $resturantTitle = $1;
 
@@ -91,13 +89,13 @@ sub get_url {
 	my( $url ) = @_;
 	print STDERR "URL: $url\n";
 
-	if( !-d $cache_dir ) {
-		mkdir( $cache_dir );
+	if( !-d $CACHE_DIR ) {
+		mkdir( $CACHE_DIR );
 	}
-	my $file = $cache_dir."/".md5_hex( $url );
+	my $file = $CACHE_DIR."/".md5_hex( $url );
 	if( !-e $file ) {
-		my $cmd = "$PHANTOM_JS '$url' > $file";
-#print $cmd."\n";
+		my $cmd = "$PHANTOMJS_BIN $BASE_DIR/save_page.js '$url' > $file";
+print STDERR $cmd."\n";
 		`$cmd`;
 	}
 
@@ -105,7 +103,7 @@ sub get_url {
 	my $r = join( "", <$fh> );
 	close $fh;
 
-	if( length($r) < 10 ) { print STDERR "\nGah: $url\nZAPPED!\n\n"; unlink($file); return ""; }
+	if( length($r) < 10 ) { print STDERR "\nGah: $url\nDidn't get a file for some reason (it was really short)!\n\n"; unlink($file); return ""; }
 
 	return $r;
 }
