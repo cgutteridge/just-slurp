@@ -94,8 +94,9 @@ sub get_url {
 	}
 	my $file = $CACHE_DIR."/".md5_hex( $url );
 	if( !-e $file ) {
-		my $cmd = "$PHANTOMJS_BIN $BASE_DIR/save_page.js '$url' > $file";
-print STDERR $cmd."\n";
+		# quote untrusted data on the command line
+		my $cmd = "$PHANTOMJS_BIN $BASE_DIR/save_page.js ".cmd_quote($url)." > ".cmd_quote($file);
+		print STDERR $cmd."\n";
 		`$cmd`;
 	}
 
@@ -106,4 +107,12 @@ print STDERR $cmd."\n";
 	if( length($r) < 10 ) { print STDERR "\nGah: $url\nDidn't get a file for some reason (it was really short)!\n\n"; unlink($file); return ""; }
 
 	return $r;
+}
+
+sub cmd_quote {
+	my( $term ) = @_;
+	
+	$term =~ s/'/'"'"'/g;
+
+	return "'$term'";
 }
